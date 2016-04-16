@@ -80,5 +80,7 @@ func (b *Batch) Flush() (err error) {
 		return err
 	}
 
+	b.Docs = nil
+
 	return b.Elastic.Bulk(buf)
 }

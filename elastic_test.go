@@ -20,7 +20,7 @@ var docs = `{ "index": { "_index": "pets", "_type": "pet" }}
 `
 
 // Elastic endpoint.
-var endpoint = "http://192.168.99.101:9200"
+var endpoint = "http://192.168.99.100:9200"
 
 func newClient(t *testing.T) *Client {
 	client := &Client{URL: endpoint}

@@ -15,7 +15,7 @@ func init() {
 }
 
 // Elastic endpoint.
-var endpoint = "http://192.168.99.101:9200"
+var endpoint = "http://192.168.99.100:9200"
 
 func newClient(t *testing.T) *elastic.Client {
 	client := &elastic.Client{URL: endpoint}
@@ -35,7 +35,6 @@ func TestClient_Bulk(t *testing.T) {
 		Elastic: client,
 		Index:   "animals",
 		Type:    "pet",
-		Log:     log.Log,
 	}
 
 	batch.Add(pet{"Tobi", "ferret"})
@@ -44,6 +43,7 @@ func TestClient_Bulk(t *testing.T) {
 
 	assert.Equal(t, 3, batch.Size(), "size")
 	assert.NoError(t, batch.Flush(), "flush")
+	assert.Equal(t, 0, batch.Size(), "size")
 	assert.NoError(t, client.RefreshIndex("animals"), "refresh")
 
 	query := `{
