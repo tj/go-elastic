@@ -1,4 +1,5 @@
-// Package batch lets you buffer bulk documents for insert.
+// Package batch lets you buffer bulk documents for insert. None of the methods
+// provided are thread-safe, you must synchronize if desired.
 package batch
 
 import (
