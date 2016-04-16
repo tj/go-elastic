@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-
-	"github.com/apex/log"
 )
 
 // Elasticsearch interface.
@@ -34,7 +32,6 @@ type Batch struct {
 	Docs    []interface{} // Docs buffered
 	Index   string        // Index name
 	Type    string        // Type name
-	Log     log.Interface // Log implementation
 }
 
 // Add document.
@@ -74,16 +71,7 @@ func (b *Batch) Bytes() (*bytes.Buffer, error) {
 
 // Flush checks in bulk.
 func (b *Batch) Flush() (err error) {
-	ctx := b.Log.WithFields(log.Fields{
-		"size":  b.Size(),
-		"index": b.Index,
-		"type":  b.Type,
-	})
-
-	defer ctx.Trace("flush").Stop(&err)
-
 	if b.Size() == 0 {
-		ctx.Info("empty")
 		return nil
 	}
 
