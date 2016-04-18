@@ -101,7 +101,10 @@ func (c *Client) request(method, path string, body io.Reader, v interface{}) err
 	}
 	defer res.Body.Close()
 
-	b, _ := ioutil.ReadAll(res.Body)
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
 
 	if res.StatusCode >= 300 {
 		return fmt.Errorf("%s: %s", res.Status, b)
