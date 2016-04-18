@@ -20,8 +20,17 @@ type Credentials awsauth.Credentials
 
 // Client is an Elasticsearch client.
 type Client struct {
+	HTTPClient  *http.Client
 	Credentials Credentials // Credentials for AWS role
 	URL         string      // URL to Elasticsearch cluster
+}
+
+// New client.
+func New(url string) *Client {
+	return &Client{
+		HTTPClient: http.DefaultClient,
+		URL:        url,
+	}
 }
 
 // Bulk POST request with the given body.
@@ -86,7 +95,7 @@ func (c *Client) request(method, path string, body io.Reader, v interface{}) err
 		}
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}

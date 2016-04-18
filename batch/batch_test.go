@@ -19,7 +19,7 @@ func init() {
 var endpoint = os.Getenv("ES_ADDR")
 
 func newClient(t *testing.T) *elastic.Client {
-	client := &elastic.Client{URL: endpoint}
+	client := elastic.New(endpoint)
 	_ = client.DeleteIndex("animals")
 	return client
 }

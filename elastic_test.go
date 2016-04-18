@@ -24,7 +24,7 @@ var docs = `{ "index": { "_index": "pets", "_type": "pet" }}
 var endpoint = os.Getenv("ES_ADDR")
 
 func newClient(t *testing.T) *Client {
-	client := &Client{URL: endpoint}
+	client := New(endpoint)
 	_ = client.DeleteIndex("pets")
 	return client
 }
