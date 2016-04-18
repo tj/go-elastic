@@ -1,6 +1,7 @@
 package batch
 
 import (
+	"os"
 	"testing"
 
 	"github.com/apex/log"
@@ -15,7 +16,7 @@ func init() {
 }
 
 // Elastic endpoint.
-var endpoint = "http://192.168.99.100:9200"
+var endpoint = os.Getenv("ES_ADDR")
 
 func newClient(t *testing.T) *elastic.Client {
 	client := &elastic.Client{URL: endpoint}
