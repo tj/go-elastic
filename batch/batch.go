@@ -15,9 +15,10 @@ type Elasticsearch interface {
 
 // Index metadata.
 type Index struct {
-	Index string `json:"_index"`
-	Type  string `json:"_type"`
-	ID    string `json:"_id,omitempty"`
+	Index   string `json:"_index"`
+	Type    string `json:"_type"`
+	Routing string `json:"_routing,omitempty"`
+	ID      string `json:"_id,omitempty"`
 }
 
 // IndexOp is an index operation.
