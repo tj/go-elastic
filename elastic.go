@@ -35,12 +35,12 @@ func New(url string) *Client {
 
 // Bulk POST request with the given body.
 func (c *Client) Bulk(body io.Reader) error {
-	return c.request("POST", "/_bulk", body, nil)
+	return c.Request("POST", "/_bulk", body, nil)
 }
 
 // DeleteIndex deletes `index`.
 func (c *Client) DeleteIndex(index string) error {
-	return c.request("DELETE", fmt.Sprintf("/%s", index), nil, nil)
+	return c.Request("DELETE", fmt.Sprintf("/%s", index), nil, nil)
 }
 
 // SearchIndex queries `index` and stores the results of `query` in `v`.
@@ -50,12 +50,12 @@ func (c *Client) SearchIndex(index string, query interface{}, v interface{}) err
 		return err
 	}
 
-	return c.request("POST", fmt.Sprintf("/%s/_search", index), bytes.NewReader(b), v)
+	return c.Request("POST", fmt.Sprintf("/%s/_search", index), bytes.NewReader(b), v)
 }
 
 // SearchIndexString queries `index` and stores the results of `query` in `v`.
 func (c *Client) SearchIndexString(index, query string, v interface{}) error {
-	return c.request("POST", fmt.Sprintf("/%s/_search", index), strings.NewReader(query), v)
+	return c.Request("POST", fmt.Sprintf("/%s/_search", index), strings.NewReader(query), v)
 }
 
 // SearchIndexTemplate queries `index` with `tmpl` string and stores the results in `v`.
@@ -76,11 +76,11 @@ func (c *Client) SearchIndexTemplate(index, tmpl string, data interface{}, v int
 
 // RefreshIndex refreshes `index`.
 func (c *Client) RefreshIndex(index string) error {
-	return c.request("POST", "/_refresh", nil, nil)
+	return c.Request("POST", "/_refresh", nil, nil)
 }
 
-// request performs a request against `url` storing the results as `v` when non-nil.
-func (c *Client) request(method, path string, body io.Reader, v interface{}) error {
+// Request performs a request against `url` storing the results as `v` when non-nil.
+func (c *Client) Request(method, path string, body io.Reader, v interface{}) error {
 	req, err := http.NewRequest(method, c.URL+path, body)
 	if err != nil {
 		return err
