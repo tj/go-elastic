@@ -18,6 +18,32 @@ import (
 // Credentials for AWS.
 type Credentials awsauth.Credentials
 
+// BulkResponse for _bulk.
+type BulkResponse struct {
+	Took   float64             `json:"took"`
+	Errors bool                `json:"errors"`
+	Items  []*BulkResponseItem `json:"items"`
+}
+
+// BulkResponseItem for _bulk.
+type BulkResponseItem struct {
+	Create *BulkResponseItemResult `json:"create,omitempty"`
+	Delete *BulkResponseItemResult `json:"delete,omitempty"`
+	Update *BulkResponseItemResult `json:"update,omitempty"`
+	Index  *BulkResponseItemResult `json:"index,omitempty"`
+}
+
+// BulkResponseItem for _bulk request responses.
+type BulkResponseItemResult struct {
+	Index   string `json:"_index"`
+	Type    string `json:"_type"`
+	ID      string `json:"_id"`
+	Version int    `json:"_version"`
+	Status  int    `json:"status"`
+	Found   bool   `json:"bool,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
 // Client is an Elasticsearch client.
 type Client struct {
 	HTTPClient  *http.Client
@@ -36,6 +62,13 @@ func New(url string) *Client {
 // Bulk POST request with the given body.
 func (c *Client) Bulk(body io.Reader) error {
 	return c.Request("POST", "/_bulk", body, nil)
+}
+
+// BulkResponse POST request with the given body and return response.
+func (c *Client) BulkResponse(body io.Reader) (res *BulkResponse, err error) {
+	res = new(BulkResponse)
+	err = c.Request("POST", "/_bulk", body, res)
+	return
 }
 
 // DeleteIndex deletes `index`.
