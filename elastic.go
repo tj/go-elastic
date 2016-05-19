@@ -48,6 +48,7 @@ type BulkResponseItemResult struct {
 type Client struct {
 	HTTPClient  *http.Client
 	Credentials Credentials // Credentials for AWS role
+	UseIAMRole  bool        // Use IAM roles on an EC2 instance
 	URL         string      // URL to Elasticsearch cluster
 }
 
@@ -124,7 +125,12 @@ func (c *Client) Request(method, path string, body io.Reader, v interface{}) err
 	if c.Credentials.AccessKeyID != "" {
 		req = awsauth.Sign4(req, awsauth.Credentials(c.Credentials))
 		if req == nil {
-			return errors.New("elastic: error signing request")
+			return errors.New("elastic: error signing request with credentials")
+		}
+	} else if c.UseIAMRole == true {
+		req = awsauth.Sign4(req)
+		if req == nil {
+			return errors.New("elastic: error signing request with IAM role")
 		}
 	}
 
