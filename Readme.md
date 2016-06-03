@@ -8,6 +8,7 @@
 [![GoDoc](https://godoc.org/github.com/tj/go-elastic?status.svg)](https://godoc.org/github.com/tj/go-elastic)
 ![](https://img.shields.io/badge/license-MIT-blue.svg)
 ![](https://img.shields.io/badge/status-stable-green.svg)
+[![](http://apex.sh/images/badge.svg)](https://apex.sh/ping/)
 
 ---
 
