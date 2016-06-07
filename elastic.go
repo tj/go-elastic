@@ -116,6 +116,10 @@ func (c *Client) RemoveOldIndexes(layout string, n int, now time.Time) error {
 		return err
 	}
 
+	if len(indexes) == 0 {
+		return nil
+	}
+
 	names := indexes.MatchingOlderThan(layout, n, now).Names()
 	list := strings.Join(names, ",")
 
