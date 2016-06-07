@@ -2,8 +2,10 @@ package elastic
 
 import (
 	"os"
+	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,12 +22,25 @@ var docs = `{ "index": { "_index": "pets", "_type": "pet" }}
 { "name": "Luna", "species": "cat" }
 `
 
+var seriesDocs = `{ "index": { "_index": "series-16-01-20", "_type": "series" }}
+{ "n": 1 }
+{ "index": { "_index": "series-16-01-21", "_type": "series" }}
+{ "n": 2 }
+{ "index": { "_index": "series-16-01-21", "_type": "series" }}
+{ "n": 3 }
+{ "index": { "_index": "series-16-01-22", "_type": "series" }}
+{ "n": 4 }
+{ "index": { "_index": "series-16-01-23", "_type": "series" }}
+{ "n": 5 }
+`
+
 // Elastic endpoint.
 var endpoint = os.Getenv("ES_ADDR")
 
 func newClient(t *testing.T) *Client {
 	client := New(endpoint)
-	_ = client.DeleteIndex("pets")
+	_ = client.DeleteAll()
+	assert.NoError(t, client.RefreshAll(), "refreshing")
 	return client
 }
 
@@ -44,7 +59,7 @@ func TestClient_SearchIndexString(t *testing.T) {
 	client := newClient(t)
 	assert.NoError(t, client.Bulk(strings.NewReader(docs)))
 
-	assert.NoError(t, client.RefreshIndex("pets"), "refreshing")
+	assert.NoError(t, client.RefreshAll(), "refreshing")
 
 	query := `{
     "aggs": {
@@ -80,7 +95,7 @@ func TestClient_SearchIndex(t *testing.T) {
 	client := newClient(t)
 	assert.NoError(t, client.Bulk(strings.NewReader(docs)))
 
-	assert.NoError(t, client.RefreshIndex("pets"), "refreshing")
+	assert.NoError(t, client.RefreshAll(), "refreshing")
 
 	var query struct {
 		Aggs struct {
@@ -118,7 +133,7 @@ func TestClient_SearchIndexTemplate(t *testing.T) {
 	client := newClient(t)
 	assert.NoError(t, client.Bulk(strings.NewReader(docs)))
 
-	assert.NoError(t, client.RefreshIndex("pets"), "refreshing")
+	assert.NoError(t, client.RefreshAll(), "refreshing")
 
 	query := `{
     "aggs": {
@@ -152,4 +167,42 @@ func TestClient_SearchIndexTemplate(t *testing.T) {
 	assert.Equal(t, 3, out.Aggregations.Species.Buckets[0].DocDount)
 	assert.Equal(t, "cat", out.Aggregations.Species.Buckets[1].Key)
 	assert.Equal(t, 2, out.Aggregations.Species.Buckets[1].DocDount)
+}
+
+func TestClient_Aliases(t *testing.T) {
+	client := newClient(t)
+
+	indexes, err := client.Aliases()
+	assert.NoError(t, err, "error fetching aliases")
+	assert.Empty(t, indexes, "aliases should be empty")
+
+	assert.NoError(t, client.Bulk(strings.NewReader(seriesDocs)))
+	assert.NoError(t, client.RefreshAll(), "refreshing")
+
+	indexes, err = client.Aliases()
+	assert.NoError(t, err, "error fetching aliases")
+
+	names := indexes.Names()
+	sort.Strings(names)
+	assert.Equal(t, []string{"series-16-01-20", "series-16-01-21", "series-16-01-22", "series-16-01-23"}, names)
+}
+
+func TestClient_RemoveOldIndexes(t *testing.T) {
+	client := newClient(t)
+
+	assert.NoError(t, client.Bulk(strings.NewReader(seriesDocs)))
+	assert.NoError(t, client.RefreshAll(), "refreshing")
+
+	now, err := time.Parse("2006-01-02", "2016-01-23")
+	assert.NoError(t, err, "error parsing time")
+
+	assert.NoError(t, client.RemoveOldIndexes("series-06-01-02", 2, now.Add(time.Minute)), "removing")
+	assert.NoError(t, client.RefreshAll(), "refreshing")
+
+	indexes, err := client.Aliases()
+	assert.NoError(t, err, "error fetching aliases")
+
+	names := indexes.Names()
+	sort.Strings(names)
+	assert.Equal(t, []string{"series-16-01-22", "series-16-01-23"}, names)
 }

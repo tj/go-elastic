@@ -11,8 +11,11 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/smartystreets/go-aws-auth"
+
+	"github.com/tj/go-elastic/aliases"
 )
 
 // Credentials for AWS.
@@ -76,6 +79,49 @@ func (c *Client) DeleteIndex(index string) error {
 	return c.Request("DELETE", fmt.Sprintf("/%s", index), nil, nil)
 }
 
+// DeleteAll deletes all indexes.
+func (c *Client) DeleteAll() error {
+	return c.Request("DELETE", "/_all", nil, nil)
+}
+
+// Aliases returns indexes and their aliases.
+func (c *Client) Aliases() (v aliases.Indexes, err error) {
+	err = c.Request("GET", "/_aliases", nil, &v)
+	return
+}
+
+// RemoveOldAliases removes `alias` from timeseries style indexes older than `n` days based on `layout`
+// such as "logs-06-01-02". For example to maintain the past week (inclusive) you might use
+// RemoveOldAliases("logs-06-01-02", "last_week", 8, time.Now()).
+func (c *Client) RemoveOldAliases(layout, alias string, n int, now time.Time) error {
+	indexes, err := c.Aliases()
+	if err != nil {
+		return err
+	}
+
+	body := indexes.RemoveOlderThan(layout, alias, n, now)
+	if body == nil {
+		return nil
+	}
+
+	return c.Request("POST", "/_aliases", bytes.NewReader(body), nil)
+}
+
+// RemoveOldIndexes removes indexes from timeseries style indexes older than `n` days based on `layout`
+// such as "logs-06-01-02". For example to maintain the past week (inclusive) you might use
+// RemoveOldIndexes("logs-06-01-02", 8, time.Now()).
+func (c *Client) RemoveOldIndexes(layout string, n int, now time.Time) error {
+	indexes, err := c.Aliases()
+	if err != nil {
+		return err
+	}
+
+	names := indexes.MatchingOlderThan(layout, n, now).Names()
+	list := strings.Join(names, ",")
+
+	return c.DeleteIndex(list)
+}
+
 // SearchIndex queries `index` and stores the results of `query` in `v`.
 func (c *Client) SearchIndex(index string, query interface{}, v interface{}) error {
 	b, err := json.Marshal(query)
@@ -109,6 +155,11 @@ func (c *Client) SearchIndexTemplate(index, tmpl string, data interface{}, v int
 
 // RefreshIndex refreshes `index`.
 func (c *Client) RefreshIndex(index string) error {
+	return c.Request("POST", fmt.Sprintf("/%s/_refresh", index), nil, nil)
+}
+
+// RefreshAll refreshes all indexes.
+func (c *Client) RefreshAll() error {
 	return c.Request("POST", "/_refresh", nil, nil)
 }
 
