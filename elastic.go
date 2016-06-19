@@ -144,9 +144,11 @@ func (c *Client) RemoveOldIndexes(layout string, n int, now time.Time) error {
 	}
 
 	names := indexes.MatchingOlderThan(layout, n, now).Names()
-	list := strings.Join(names, ",")
+	if len(names) == 0 {
+		return nil
+	}
 
-	return c.DeleteIndex(list)
+	return c.DeleteIndex(strings.Join(names, ","))
 }
 
 // SearchIndex queries `index` and stores the results of `query` in `v`.
