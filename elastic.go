@@ -73,6 +73,7 @@ func New(url string) *Client {
 // SetAWSCredentials for connection to an AWS ElasticSearch instance
 func (c *Client) SetAWSCredentials(credentials AWSCredentials) {
 	c.awsCredentials = &credentials
+	c.authCredentials = nil
 }
 
 // SetAuthCredentials for a username/password connection
@@ -81,6 +82,7 @@ func (c *Client) SetAuthCredentials(username, password string) {
 		username: username,
 		password: password,
 	}
+	c.awsCredentials = nil
 }
 
 // Bulk POST request with the given body.
