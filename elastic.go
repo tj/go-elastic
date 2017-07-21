@@ -3,6 +3,7 @@ package elastic
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,8 +19,14 @@ import (
 	"github.com/tj/go-elastic/aliases"
 )
 
-// Credentials for AWS.
-type Credentials awsauth.Credentials
+// AWSCredentials for AWS.
+type AWSCredentials awsauth.Credentials
+
+// authCredentials to connect with a user/password combination
+type authCredentials struct {
+	username string
+	password string
+}
 
 // BulkResponse for _bulk.
 type BulkResponse struct {
@@ -49,9 +56,10 @@ type BulkResponseItemResult struct {
 
 // Client is an Elasticsearch client.
 type Client struct {
-	HTTPClient  *http.Client
-	Credentials Credentials // Credentials for AWS role
-	URL         string      // URL to Elasticsearch cluster
+	HTTPClient      *http.Client
+	awsCredentials  *AWSCredentials  // Credentials for AWS role
+	authCredentials *authCredentials // User/password credentials
+	URL             string           // URL to Elasticsearch cluster
 }
 
 // New client.
@@ -60,6 +68,21 @@ func New(url string) *Client {
 		HTTPClient: http.DefaultClient,
 		URL:        url,
 	}
+}
+
+// SetAWSCredentials for connection to an AWS ElasticSearch instance
+func (c *Client) SetAWSCredentials(credentials AWSCredentials) {
+	c.awsCredentials = &credentials
+	c.authCredentials = nil
+}
+
+// SetAuthCredentials for a username/password connection
+func (c *Client) SetAuthCredentials(username, password string) {
+	c.authCredentials = &authCredentials{
+		username: username,
+		password: password,
+	}
+	c.awsCredentials = nil
 }
 
 // Bulk POST request with the given body.
@@ -176,8 +199,12 @@ func (c *Client) Request(method, path string, body io.Reader, v interface{}) err
 
 	req.Header.Set("Content-Type", "application/json")
 
-	if c.Credentials.AccessKeyID != "" {
-		req = awsauth.Sign4(req, awsauth.Credentials(c.Credentials))
+	if c.authCredentials != nil {
+		credentials := fmt.Sprintf("%s:%s", c.authCredentials.username, c.authCredentials.password)
+		b64credentials := base64.StdEncoding.EncodeToString([]byte(credentials))
+		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", b64credentials))
+	} else if c.awsCredentials != nil {
+		req = awsauth.Sign4(req, awsauth.Credentials(*c.awsCredentials))
 		if req == nil {
 			return errors.New("elastic: error signing request")
 		}
